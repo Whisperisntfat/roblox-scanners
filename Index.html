@@ -218,12 +218,9 @@
     const form = document.getElementById('user-form');
     const result = document.getElementById('result');
 
-    // ====== CHANGED ONLY THIS ======
-    const PROXY = "https://icy-haze-34df.whispersaltacc.workers.dev";
     function proxy(url) {
-        return `${PROXY}?url=${encodeURIComponent(url)}`;
+        return 'https://thingproxy.freeboard.io/fetch/' + url;
     }
-    // ===============================
 
     function toggleGroups() {
         const list = document.getElementById('groups-list');
