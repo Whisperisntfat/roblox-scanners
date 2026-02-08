@@ -219,7 +219,7 @@
     const result = document.getElementById('result');
 
     function proxy(url) {
-        return 'https://corsproxy.io/?' + encodeURIComponent(url);
+        return 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
     }
 
     function toggleGroups() {
@@ -250,12 +250,16 @@
                 body: JSON.stringify({usernames: [username], excludeBannedUsers: false})
             });
             const uidData = await uidRes.json();
-            if (!uidData.data?.length) throw new Error('TARGET NOT FOUND');
+            if (!uidData.contents) throw new Error('Proxy failed');
+            const uidParsed = JSON.parse(uidData.contents);
+            if (!uidParsed.data?.length) throw new Error('TARGET NOT FOUND');
 
-            const uid = uidData.data[0].id;
+            const uid = uidParsed.data[0].id;
 
             const userRes = await fetch(proxy(`https://users.roblox.com/v1/users/${uid}`));
-            const user = await userRes.json();
+            const userData = await userRes.json();
+            if (!userData.contents) throw new Error('Proxy failed');
+            const user = JSON.parse(userData.contents);
             const createdDate = new Date(user.created);
             const created = createdDate.toLocaleDateString('en-US', {
                 year:'numeric', month:'short', day:'numeric'
@@ -266,30 +270,40 @@
 
             const avatarRes = await fetch(proxy(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${uid}&size=420x420&format=Png&isCircular=false`));
             const avatarData = await avatarRes.json();
-            const avatarUrl = avatarData.data?.[0]?.imageUrl || '';
+            if (!avatarData.contents) throw new Error('Proxy failed');
+            const avatarParsed = JSON.parse(avatarData.contents);
+            const avatarUrl = avatarParsed.data?.[0]?.imageUrl || '';
 
             const fRes = await fetch(proxy(`https://friends.roblox.com/v1/users/${uid}/friends/count`));
-            const friends = await fRes.json();
+            const friendsData = await fRes.json();
+            if (!friendsData.contents) throw new Error('Proxy failed');
+            const friends = JSON.parse(friendsData.contents);
 
             const prevRes = await fetch(proxy(`https://users.roblox.com/v1/users/${uid}/username-history?limit=10&sortOrder=Desc`));
             const prevData = await prevRes.json();
-            const prevUsernames = prevData.data?.length ? prevData.data.map(u => u.name).join(', ') : 'None';
+            if (!prevData.contents) throw new Error('Proxy failed');
+            const prevParsed = JSON.parse(prevData.contents);
+            const prevUsernames = prevParsed.data?.length ? prevParsed.data.map(u => u.name).join(', ') : 'None';
 
             const favRes = await fetch(proxy(`https://games.roblox.com/v2/users/${uid}/favorite/games?limit=100`));
             const favData = await favRes.json();
-            const universeIds = favData.data?.map(g => g.id) || [];
+            if (!favData.contents) throw new Error('Proxy failed');
+            const favParsed = JSON.parse(favData.contents);
+            const universeIds = favParsed.data?.map(g => g.id) || [];
             let gameThumbs = {};
             if (universeIds.length) {
                 const thumbRes = await fetch(proxy(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${universeIds.join(',')}&countPerUniverse=1&defaults=true&size=768x432&format=Png&isCircular=false`));
                 const thumbData = await thumbRes.json();
-                thumbData.data.forEach(t => {
+                if (!thumbData.contents) throw new Error('Proxy failed');
+                const thumbParsed = JSON.parse(thumbData.contents);
+                thumbParsed.data.forEach(t => {
                     gameThumbs[t.universeId] = t.thumbnails[0]?.imageUrl || '';
                 });
             }
 
             let gamesHtml = '<ul id="games-list" class="games-list">';
-            if (favData.data?.length > 0) {
-                favData.data.forEach(g => {
+            if (favParsed.data?.length > 0) {
+                favParsed.data.forEach(g => {
                     const thumb = gameThumbs[g.id] || '';
                     gamesHtml += `
                         <li class="game-item">
@@ -304,12 +318,16 @@
 
             const groupsRes = await fetch(proxy(`https://groups.roblox.com/v1/users/${uid}/groups/roles?limit=100`));
             const groupsData = await groupsRes.json();
-            const groupIds = groupsData.data?.map(g => g.group.id) || [];
+            if (!groupsData.contents) throw new Error('Proxy failed');
+            const groupsParsed = JSON.parse(groupsData.contents);
+            const groupIds = groupsParsed.data?.map(g => g.group.id) || [];
             let groupIcons = {};
             if (groupIds.length) {
                 const iconRes = await fetch(proxy(`https://thumbnails.roblox.com/v1/groups/icons?groupIds=${groupIds.join(',')}&size=150x150&format=Png&isCircular=false`));
                 const iconData = await iconRes.json();
-                iconData.data.forEach(i => {
+                if (!iconData.contents) throw new Error('Proxy failed');
+                const iconParsed = JSON.parse(iconData.contents);
+                iconParsed.data.forEach(i => {
                     groupIcons[i.targetId] = i.imageUrl || '';
                 });
             }
@@ -317,8 +335,8 @@
             let groupsHtml = '<ul id="groups-list" class="group-list">';
             let groupCount = 0;
 
-            if (groupsData.data?.length > 0) {
-                groupsData.data.forEach(m => {
+            if (groupsParsed.data?.length > 0) {
+                groupsParsed.data.forEach(m => {
                     const icon = groupIcons[m.group.id] || '';
                     groupsHtml += `
                         <li class="group-item">
@@ -363,7 +381,7 @@
 <div class="section">┌─ AVATAR</div>
 ${avatarUrl ? `<img src="${avatarUrl}" alt="Avatar" class="avatar">` : '<span class="info">[ NO AVATAR ]</span>'}
 
-<div class="section">┌─ FAVORITE GAMES (${favData.data?.length || 0})</div>
+<div class="section">┌─ FAVORITE GAMES (${favParsed.data?.length || 0})</div>
 <button id="toggle-games" onclick="toggleGames()">DUMP FAVORITE GAMES</button>
 ${gamesHtml}
 
