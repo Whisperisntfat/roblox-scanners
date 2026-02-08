@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[K-10] Roblox Alt Scanner v2.0</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #0f0;
+            font-family: 'VT323', monospace;
+            font-size: 1.25rem;
+            line-height: 1.35;
+            min-height: 100vh;
+            padding: 1rem;
+            background-image: 
+                linear-gradient(rgba(0,255,0,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,0,0.04) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2.6rem;
+            letter-spacing: 5px;
+            animation: glitch 4s infinite;
+        }
+
+        .terminal {
+            border: 2px solid #0f0;
+            background: rgba(0,0,0,0.8);
+            padding: 1rem;
+            box-shadow: 0 0 20px rgba(0,255,0,0.25);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .terminal::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0,
+                rgba(0,255,0,0.05) 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            animation: scanline 10s linear infinite;
+        }
+
+        .prompt {
+            color: #0f5;
+            margin-bottom: 0.6rem;
+        }
+
+        form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: #000;
+            border: 1px solid #0f0;
+            color: #0f0;
+            font-family: inherit;
+            font-size: 1.2rem;
+            padding: 0.5rem 0.8rem;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 0.5rem 1.2rem;
+            font-family: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        button:hover {
+            background: #0f5;
+            box-shadow: 0 0 12px #0f0;
+        }
+
+        #result {
+            min-height: 120px;
+        }
+
+        .loading {
+            color: #f80;
+            animation: blink 1s step-end infinite;
+        }
+
+        .error {
+            color: #f44;
+            text-shadow: 0 0 6px #f00;
+        }
+
+        .section {
+            margin: 0.8rem 0;
+            border-left: 3px solid #0a0;
+            padding-left: 0.8rem;
+        }
+
+        .group-list, .games-list {
+            list-style: none;
+            margin: 0.4rem 0;
+            display: none;
+        }
+
+        .group-list.visible, .games-list.visible {
+            display: block;
+        }
+
+        .group-item, .game-item {
+            margin: 0.2rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info {
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+        }
+
+        a {
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+        }
+
+        .avatar, .group-icon, .game-thumb {
+            border: 1px solid #0f0;
+            box-shadow: 0 0 10px rgba(0,255,0,0.5);
+            max-width: 150px;
+            height: auto;
+        }
+
+        .group-icon, .game-thumb {
+            max-width: 50px;
+        }
+
+        .blink-cursor::after {
+            content: "|";
+            animation: blink 0.7s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        @keyframes glitch {
+            0%   { text-shadow: 2px 0 #f0f, -2px 0 #0ff; }
+            10%  { text-shadow: -2px 0 #f0f, 2px 0 #0ff; }
+            20%  { text-shadow: 0 0 #f0f; }
+            100% { text-shadow: 2px 0 #f0f, -2px 0 #0ff; }
+        }
+
+        .status {
+            color: #0f8;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>K-10 ALT ACQUISITION</h1>
+        <div style="color:#0a5; font-size:1.3rem;">ROBLOX ALT SCANNER v2.0</div>
+    </header>
+
+    <div class="terminal">
+        <div class="prompt">C:\K-10\scanner> <span class="blink-cursor">_</span></div>
+
+        <form id="user-form">
+            <input type="text" id="username" placeholder="ENTER TARGET USERNAME" autocomplete="off" required>
+            <button type="submit">EXECUTE</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('user-form');
+    const result = document.getElementById('result');
+
+    function proxy(url) {
+        return 'https://corsproxy.io/?' + encodeURIComponent(url);
+    }
+
+    function toggleGroups() {
+        const list = document.getElementById('groups-list');
+        const btn = document.getElementById('toggle-groups');
+        list.classList.toggle('visible');
+        btn.textContent = list.classList.contains('visible') ? 'HIDE GROUP DATA' : 'SHOW GROUP DATA';
+    }
+
+    function toggleGames() {
+        const list = document.getElementById('games-list');
+        const btn = document.getElementById('toggle-games');
+        list.classList.toggle('visible');
+        btn.textContent = list.classList.contains('visible') ? 'HIDE FAVORITE GAMES' : 'SHOW FAVORITE GAMES';
+    }
+
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const username = document.getElementById('username').value.trim();
+        if (!username) return;
+
+        result.innerHTML = '<div class="loading">[SCRAMBLING DATA...]</div>';
+
+        try {
+            const uidRes = await fetch(proxy('https://users.roblox.com/v1/usernames/users'), {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({usernames: [username], excludeBannedUsers: false})
+            });
+            const uidData = await uidRes.json();
+            if (!uidData.data?.length) throw new Error('TARGET NOT FOUND');
+
+            const uid = uidData.data[0].id;
+
+            const userRes = await fetch(proxy(`https://users.roblox.com/v1/users/${uid}`));
+            const user = await userRes.json();
+            const createdDate = new Date(user.created);
+            const created = createdDate.toLocaleDateString('en-US', {
+                year:'numeric', month:'short', day:'numeric'
+            });
+            const now = new Date();
+            const ageMs = now - createdDate;
+            const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+
+            const avatarRes = await fetch(proxy(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${uid}&size=420x420&format=Png&isCircular=false`));
+            const avatarData = await avatarRes.json();
+            const avatarUrl = avatarData.data?.[0]?.imageUrl || '';
+
+            const fRes = await fetch(proxy(`https://friends.roblox.com/v1/users/${uid}/friends/count`));
+            const friends = await fRes.json();
+
+            const prevRes = await fetch(proxy(`https://users.roblox.com/v1/users/${uid}/username-history?limit=10&sortOrder=Desc`));
+            const prevData = await prevRes.json();
+            const prevUsernames = prevData.data?.length ? prevData.data.map(u => u.name).join(', ') : 'None';
+
+            const favRes = await fetch(proxy(`https://games.roblox.com/v2/users/${uid}/favorite/games?limit=100`));
+            const favData = await favRes.json();
+            const universeIds = favData.data?.map(g => g.id) || [];
+            let gameThumbs = {};
+            if (universeIds.length) {
+                const thumbRes = await fetch(proxy(`https://thumbnails.roblox.com/v1/games/multiget/thumbnails?universeIds=${universeIds.join(',')}&countPerUniverse=1&defaults=true&size=768x432&format=Png&isCircular=false`));
+                const thumbData = await thumbRes.json();
+                thumbData.data.forEach(t => {
+                    gameThumbs[t.universeId] = t.thumbnails[0]?.imageUrl || '';
+                });
+            }
+
+            let gamesHtml = '<ul id="games-list" class="games-list">';
+            if (favData.data?.length > 0) {
+                favData.data.forEach(g => {
+                    const thumb = gameThumbs[g.id] || '';
+                    gamesHtml += `
+                        <li class="game-item">
+                            ${thumb ? `<img src="${thumb}" alt="Game Thumbnail" class="game-thumb">` : ''}
+                            <a href="https://www.roblox.com/games/${g.rootPlaceId}" target="_blank" class="game-name">${g.name}</a>
+                        </li>`;
+                });
+            } else {
+                gamesHtml += '<li class="game-item"><span class="info">[ NO FAVORITE GAMES ]</span></li>';
+            }
+            gamesHtml += '</ul>';
+
+            const groupsRes = await fetch(proxy(`https://groups.roblox.com/v1/users/${uid}/groups/roles?limit=100`));
+            const groupsData = await groupsRes.json();
+            const groupIds = groupsData.data?.map(g => g.group.id) || [];
+            let groupIcons = {};
+            if (groupIds.length) {
+                const iconRes = await fetch(proxy(`https://thumbnails.roblox.com/v1/groups/icons?groupIds=${groupIds.join(',')}&size=150x150&format=Png&isCircular=false`));
+                const iconData = await iconRes.json();
+                iconData.data.forEach(i => {
+                    groupIcons[i.targetId] = i.imageUrl || '';
+                });
+            }
+
+            let groupsHtml = '<ul id="groups-list" class="group-list">';
+            let groupCount = 0;
+
+            if (groupsData.data?.length > 0) {
+                groupsData.data.forEach(m => {
+                    const icon = groupIcons[m.group.id] || '';
+                    groupsHtml += `
+                        <li class="group-item">
+                            ${icon ? `<img src="${icon}" alt="Group Icon" class="group-icon">` : ''}
+                            <span class="info">${m.role.name}</span>
+                            @ <a href="https://www.roblox.com/groups/${m.group.id}" target="_blank" class="group-name">${m.group.name}</a>
+                        </li>`;
+                    groupCount++;
+                });
+            } else {
+                groupsHtml += '<li class="group-item"><span class="info">[ NO GROUPS ]</span></li>';
+            }
+            groupsHtml += '</ul>';
+
+            result.innerHTML = `
+<div class="status">[TARGET LOCKED — ${user.displayName} (@${user.name})]</div>
+
+<div class="section">┌─ CURRENT USERNAME</div>
+<span class="info">${user.displayName} (@${user.name})</span>
+
+<div class="section">┌─ USER ID</div>
+<span class="info">${uid}</span>
+
+<div class="section">┌─ PROFILE LINK</div>
+<a href="https://www.roblox.com/users/${uid}/profile" target="_blank" rel="noopener noreferrer nofollow">https://www.roblox.com/users/${uid}/profile</a>
+
+<div class="section">┌─ ACCOUNT AGE</div>
+<span class="info">${ageDays} days</span>
+
+<div class="section">┌─ JOIN DATE</div>
+<span class="info">${created}</span>
+
+<div class="section">┌─ HOW MANY DAYS OLD THE ACCOUNT IS</div>
+<span class="info">${ageDays} days</span>
+
+<div class="section">┌─ FRIENDS COUNT</div>
+<span class="info">${friends.count.toLocaleString()}</span>
+
+<div class="section">┌─ PREVIOUS USERNAMES (LAST 10)</div>
+<span class="info">${prevUsernames}</span>
+
+<div class="section">┌─ AVATAR</div>
+${avatarUrl ? `<img src="${avatarUrl}" alt="Avatar" class="avatar">` : '<span class="info">[ NO AVATAR ]</span>'}
+
+<div class="section">┌─ FAVORITE GAMES (${favData.data?.length || 0})</div>
+<button id="toggle-games" onclick="toggleGames()">DUMP FAVORITE GAMES</button>
+${gamesHtml}
+
+<div class="section">┌─ GROUPS (${groupCount})</div>
+<button id="toggle-groups" onclick="toggleGroups()">DUMP GROUP DATA</button>
+${groupsHtml}
+
+<div style="margin-top:0.8rem;color:#0a5;">[SCAN COMPLETE]</div>
+            `;
+        } catch (err) {
+            result.innerHTML = `
+<div class="error">[FAILURE] ${err.message}</div>
+<div style="color:#f66; margin-top:0.4rem;">Retry or change target.</div>
+            `;
+        }
+    });
+</script>
+</body>
+</html>

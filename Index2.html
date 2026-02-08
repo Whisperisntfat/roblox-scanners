@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[K-SEC] Roblox Friends Scanner v1.0</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: #0f0;
+            font-family: 'VT323', monospace;
+            font-size: 1.25rem;
+            line-height: 1.35;
+            min-height: 100vh;
+            padding: 1rem;
+            background-image: 
+                linear-gradient(rgba(0,255,0,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,0,0.04) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-size: 2.6rem;
+            letter-spacing: 5px;
+            animation: glitch 4s infinite;
+        }
+
+        .terminal {
+            border: 2px solid #0f0;
+            background: rgba(0,0,0,0.8);
+            padding: 1rem;
+            box-shadow: 0 0 20px rgba(0,255,0,0.25);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .terminal::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent 0,
+                rgba(0,255,0,0.05) 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            animation: scanline 10s linear infinite;
+        }
+
+        .prompt {
+            color: #0f5;
+            margin-bottom: 0.6rem;
+        }
+
+        form {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: #000;
+            border: 1px solid #0f0;
+            color: #0f0;
+            font-family: inherit;
+            font-size: 1.2rem;
+            padding: 0.5rem 0.8rem;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            box-shadow: 0 0 10px #0f0;
+        }
+
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 0.5rem 1.2rem;
+            font-family: inherit;
+            font-size: 1.2rem;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        button:hover {
+            background: #0f5;
+            box-shadow: 0 0 12px #0f0;
+        }
+
+        #result {
+            min-height: 120px;
+        }
+
+        .loading {
+            color: #f80;
+            animation: blink 1s step-end infinite;
+        }
+
+        .error {
+            color: #f44;
+            text-shadow: 0 0 6px #f00;
+        }
+
+        .section {
+            margin: 0.8rem 0;
+            border-left: 3px solid #0a0;
+            padding-left: 0.8rem;
+        }
+
+        .info {
+            color: #0ff;
+            text-shadow: 0 0 10px #0ff;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .card {
+            border: 1px solid #0f0;
+            background: rgba(0,0,0,0.5);
+            padding: 0.5rem;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(0,255,0,0.25);
+        }
+
+        .card img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #0f0;
+            box-shadow: 0 0 5px rgba(0,255,0,0.5);
+        }
+
+        .mutual-info {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            border-top: 1px solid #0f0;
+            display: none;
+        }
+
+        .blink-cursor::after {
+            content: "|";
+            animation: blink 0.7s step-end infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        @keyframes glitch {
+            0%   { text-shadow: 2px 0 #f0f, -2px 0 #0ff; }
+            10%  { text-shadow: -2px 0 #f0f, 2px 0 #0ff; }
+            20%  { text-shadow: 0 0 #f0f; }
+            100% { text-shadow: 2px 0 #f0f, -2px 0 #0ff; }
+        }
+
+        .status {
+            color: #0f8;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>K-10 ALT ACQUISITION(2)</h1>
+        <div style="color:#0a5; font-size:1.3rem;">ROBLOX FRIENDS SCANNER v1.0</div>
+    </header>
+
+    <div class="terminal">
+        <div class="prompt">C:\K-10\scanner> <span class="blink-cursor">_</span></div>
+
+        <form id="user-form">
+            <input type="text" id="username" placeholder="ENTER TARGET USERNAME" autocomplete="off" required>
+            <button type="submit">EXECUTE</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('user-form');
+    const result = document.getElementById('result');
+
+    function proxy(url) {
+        return 'https://corsproxy.io/?' + encodeURIComponent(url);
+    }
+
+    async function showMutual(friendId, targetId, targetDisplayName, friendDisplayName) {
+        const mutualDiv = document.getElementById(`mutual-${friendId}`);
+        if (mutualDiv.style.display === 'block') {
+            mutualDiv.style.display = 'none';
+            return;
+        }
+        mutualDiv.innerHTML = '<div class="info">Loading mutual data...</div>';
+        mutualDiv.style.display = 'block';
+
+        try {
+            const targetFriendIds = new Set(window.targetFriends.map(f => f.id));
+
+            const friendFriendsRes = await fetch(proxy(`https://friends.roblox.com/v1/users/${friendId}/friends?limit=50`));
+            const friendFriends = await friendFriendsRes.json();
+            const mutualFriends = friendFriends.data?.filter(f => targetFriendIds.has(f.id)) || [];
+
+            const targetGroupsRes = await fetch(proxy(`https://groups.roblox.com/v1/users/${targetId}/groups/roles?limit=100`));
+            const targetGroups = await targetGroupsRes.json();
+            const targetGroupIds = new Set(targetGroups.data?.map(g => g.group.id) || []);
+
+            const friendGroupsRes = await fetch(proxy(`https://groups.roblox.com/v1/users/${friendId}/groups/roles?limit=100`));
+            const friendGroups = await friendGroupsRes.json();
+            const mutualGroups = friendGroups.data?.filter(g => targetGroupIds.has(g.group.id)) || [];
+
+            let mutualHtml = `
+                <div class="info">Mutual between ${targetDisplayName} and ${friendDisplayName}</div>
+                <div>Mutual Friends: ${mutualFriends.length}</div>
+                <div>Mutual Groups: ${mutualGroups.map(g => g.group.name).join(', ') || 'None'}</div>
+            `;
+            mutualDiv.innerHTML = mutualHtml;
+        } catch (err) {
+            mutualDiv.innerHTML = '<div class="error">Failed to load mutual data</div>';
+        }
+    }
+
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const username = document.getElementById('username').value.trim();
+        if (!username) return;
+
+        result.innerHTML = '<div class="loading">[CONNECTING... BYPASSING FIREWALL...]</div>';
+
+        try {
+            const uidRes = await fetch(proxy('https://users.roblox.com/v1/usernames/users'), {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({usernames: [username], excludeBannedUsers: false})
+            });
+            const uidData = await uidRes.json();
+            if (!uidData.data?.length) throw new Error('TARGET NOT FOUND');
+
+            const uid = uidData.data[0].id;
+            const targetDisplayName = uidData.data[0].displayName;
+
+            const fCountRes = await fetch(proxy(`https://friends.roblox.com/v1/users/${uid}/friends/count`));
+            const fCount = await fCountRes.json();
+
+            let allFriends = [];
+            let cursor = null;
+            do {
+                let url = `https://friends.roblox.com/v1/users/${uid}/friends?limit=100`;
+                if (cursor) url += `&cursor=${encodeURIComponent(cursor)}`;
+                const res = await fetch(proxy(url));
+                const data = await res.json();
+                allFriends = allFriends.concat(data.data || []);
+                cursor = data.nextPageCursor;
+            } while (cursor);
+
+            window.targetFriends = allFriends;
+
+            const friendsData = { data: allFriends.slice(0, 50) };
+
+            const friendDetails = [];
+            for (const friend of friendsData.data) {
+                try {
+                    const detailRes = await fetch(proxy(`https://users.roblox.com/v1/users/${friend.id}`));
+                    const detail = await detailRes.json();
+                    friendDetails.push({
+                        id: friend.id,
+                        displayName: detail.displayName || 'Unknown',
+                        name: detail.name || 'unknown',
+                        created: new Date(detail.created).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }),
+                        avatar: ''
+                    });
+                } catch (err) {
+                    friendDetails.push({
+                        id: friend.id,
+                        displayName: 'Unknown',
+                        name: 'unknown',
+                        created: 'Unknown',
+                        avatar: ''
+                    });
+                }
+            }
+
+            const friendIds = friendDetails.map(f => f.id);
+            let avatars = {};
+            if (friendIds.length > 0) {
+                try {
+                    const avatarRes = await fetch(proxy(`https://thumbnails.roblox.com/v1/users/avatar?userIds=${friendIds.join(',')}&size=150x150&format=Png&isCircular=false`));
+                    const avatarData = await avatarRes.json();
+                    if (avatarData.data && Array.isArray(avatarData.data)) {
+                        avatarData.data.forEach(a => {
+                            if (a.imageUrl) {
+                                avatars[a.targetId] = a.imageUrl;
+                            }
+                        });
+                    }
+                } catch (err) {
+                }
+            }
+
+            friendDetails.forEach(f => {
+                f.avatar = avatars[f.id] || '';
+            });
+
+            let cardsHtml = '<div class="cards">';
+            friendDetails.forEach(friend => {
+                cardsHtml += `
+                    <div class="card">
+                        ${friend.avatar ? `<img src="${friend.avatar}" alt="Avatar">` : '<div class="info">[NO AVATAR]</div>'}
+                        <div class="info">${friend.displayName} (@${friend.name})</div>
+                        <div class="info">Created: ${friend.created}</div>
+                        <button onclick="showMutual(${friend.id}, ${uid}, '${targetDisplayName}', '${friend.displayName}')">MUTUAL</button>
+                        <div id="mutual-${friend.id}" class="mutual-info"></div>
+                    </div>`;
+            });
+            cardsHtml += '</div>';
+
+            result.innerHTML = `
+<div class="status">[TARGET LOCKED — ${targetDisplayName} (@${username})]</div>
+
+<div class="section">┌─ NUMBER OF FRIENDS</div>
+<span class="info">${fCount.count.toLocaleString()}</span>
+
+<div class="section">┌─ FRIENDS LIST (FIRST 50)</div>
+${cardsHtml}
+
+<div style="margin-top:0.8rem;color:#0a5;">[SCAN COMPLETE]</div>
+            `;
+        } catch (err) {
+            result.innerHTML = `
+<div class="error">[FAILURE] ${err.message}</div>
+<div style="color:#f66; margin-top:0.4rem;">Retry or change target.</div>
+            `;
+        }
+    });
+</script>
+</body>
+</html>
